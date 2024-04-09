@@ -1,7 +1,7 @@
 const { pool } = require("../db/db");
 const redis = require("ioredis");
 const redisClient = redis.createClient({
-  host: "13.52.77.220",
+  host: "localhost",
   port: process.env.REDIS_PORT, // Default Redis port
   password: process.env.REDIS_PASSWORD,
 });
