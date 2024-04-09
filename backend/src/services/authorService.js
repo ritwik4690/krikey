@@ -1,8 +1,9 @@
 const { pool } = require("../db/db");
-const redis = require('ioredis');
+const redis = require("ioredis");
 const redisClient = redis.createClient({
-  host: 'localhost',
-  port: 6379, // Default Redis port
+  host: "13.52.77.220",
+  port: process.env.REDIS_PORT, // Default Redis port
+  password: process.env.REDIS_PASSWORD,
 });
 
 async function getAuthorByName(author_name) {
@@ -24,20 +25,20 @@ async function getAuthorByName(author_name) {
 }
 
 async function getTopAuthors() {
-  const cacheKey = 'topAuthors';
+  const cacheKey = "topAuthors";
   const client = await pool.connect();
   return new Promise(async (resolve, reject) => {
     await redisClient.get(cacheKey, async (err, cachedData) => {
       if (err) {
-        console.error('Redis cache error:', err);
+        console.error("Redis cache error:", err);
         reject(err);
       } else if (cachedData) {
         // Data found in cache, return cached data
-        console.log('Data retrieved from Redis cache');
+        console.log("Data retrieved from Redis cache");
         resolve(JSON.parse(cachedData));
       } else {
         // Fetch top authors with revenue
-        console.log('Fetch top authors with revenue');
+        console.log("Fetch top authors with revenue");
         const query = `
           SELECT a.name AS author_name, a.email AS author_email 
           FROM authors a JOIN (
@@ -50,21 +51,23 @@ async function getTopAuthors() {
           ON a.id = top_authors.author_id 
           ORDER BY top_authors.revenue DESC;
         `;
-        
+
         const rows = await client.query(query);
         client.release();
-        console.log('Rows received');
+        console.log("Rows received");
         // Store data in Redis cache with expiration time (e.g., 1 hour)
-        console.log('Stored data in Redis cache with expiration time 30 seconds');
-        await redisClient.set(cacheKey, JSON.stringify(rows.rows), 'EX', 30);
+        console.log(
+          "Stored data in Redis cache with expiration time 30 seconds"
+        );
+        await redisClient.set(cacheKey, JSON.stringify(rows.rows), "EX", 30);
         resolve(rows.rows);
       }
-    });  
+    });
   });
 }
 
-redisClient.on('error', (err) => {
-  console.error('Redis client error:', err);
+redisClient.on("error", (err) => {
+  console.error("Redis client error:", err);
   redisClient.quit();
 });
 
