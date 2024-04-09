@@ -2,8 +2,7 @@ const { pool } = require("../db/db");
 const redis = require("ioredis");
 const redisClient = redis.createClient({
   host: "localhost",
-  port: process.env.REDIS_PORT, // Default Redis port
-  password: process.env.REDIS_PASSWORD,
+  port: 6379, // Default Redis port
 });
 
 async function getAuthorByName(author_name) {
