@@ -114,7 +114,11 @@ This will by default take you to the top authors page. You can modify the URL an
 
 ### Demo:
 
-[video](krikey-demo.mov)
+
+https://github.com/ritwik4690/krikey/assets/61344435/f92dc560-cc83-4dda-9822-a14dd80d47c0
+
+
+
 
 #### Deployment steps
 I saw the team uses AWS and wanted to deploy on AWS. But this is my first time working with AWS and I was not able to complete deployment in the given time. Here are the steps I took:
