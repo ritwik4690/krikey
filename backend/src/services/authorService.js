@@ -1,94 +1,71 @@
 const { pool } = require("../db/db");
-// const {
-//   redisClient,
-//   redisGetAsync,
-//   redisSetexAsync
-// } = require("../db/redisClient");
-// const redis = require('redis');
+const redis = require('ioredis');
+const redisClient = redis.createClient({
+  host: 'localhost',
+  port: 6379, // Default Redis port
+});
 
-
-async function getTopAuthors(author_name) {
+async function getAuthorByName(author_name) {
   const client = await pool.connect();
-  if (author_name) {
-    //return the name and sales revenue of the given author
-    try {
-      const query = `
-        SELECT a.name AS author_name, a.email AS author_email, SUM(si.item_price * si.quantity) AS total_sales_revenue
-        FROM authors a
-        JOIN books b ON a.id = b.author_id
-        JOIN sale_items si ON b.id = si.book_id
-        WHERE a.name = $1
-        GROUP BY a.id, a.name, a.email;
-      `;
-      const { rows } = await client.query(query, [author_name]);
-      return rows;
-    } catch (err) {
-      console.error("Error fetching top authors:", err);
-      throw err;
-    }
-  } else {
-    try {
-      const query = `
-          SELECT a.name AS author_name, a.email as author_email, SUM(si.item_price * si.quantity) AS total_sales_revenue
-          FROM authors a
-          JOIN books b ON a.id = b.author_id
-          JOIN sale_items si ON b.id = si.book_id
-          GROUP BY a.name, a.email
-          ORDER BY total_sales_revenue DESC
-          LIMIT 10;
-        `;
-      const { rows } = await client.query(query);
-      return rows;
-    } catch (err) {
-      console.error("Error fetching top authors:", err);
-      throw err;
-    }
+  try {
+    const query = `
+      SELECT a.name AS author_name, a.email AS author_email
+      FROM authors a
+      WHERE a.name = $1;
+    `;
+    const { rows } = await client.query(query, [author_name]);
+    return rows;
+  } catch (err) {
+    console.error("Error fetching author by name:", err);
+    throw err;
+  } finally {
+    client.release();
   }
-  client.release();
-
 }
 
-// async function getTopAuthors() {
-//   try {
-//     // Check if data is cached in Redis
-//     await redisClient.connect();
-//     const cachedData = await redisGetAsync("topAuthors");
-//     if (cachedData) {
-//       console.log("Data fetched from Redis cache");
-//       return JSON.parse(cachedData);
-//     }
+async function getTopAuthors() {
+  const cacheKey = 'topAuthors';
+  const client = await pool.connect();
+  return new Promise(async (resolve, reject) => {
+    await redisClient.get(cacheKey, async (err, cachedData) => {
+      if (err) {
+        console.error('Redis cache error:', err);
+        reject(err);
+      } else if (cachedData) {
+        // Data found in cache, return cached data
+        console.log('Data retrieved from Redis cache');
+        resolve(JSON.parse(cachedData));
+      } else {
+        // Fetch top authors with revenue
+        console.log('Fetch top authors with revenue');
+        const query = `
+          SELECT a.name AS author_name, a.email AS author_email 
+          FROM authors a JOIN (
+            SELECT b.author_id AS author_id, SUM(si.item_price * si.quantity) AS revenue 
+            FROM books b JOIN sale_items si ON b.id = si.book_id 
+            GROUP BY b.author_id 
+            ORDER BY revenue DESC 
+            LIMIT 10
+          ) AS top_authors 
+          ON a.id = top_authors.author_id 
+          ORDER BY top_authors.revenue DESC;
+        `;
+        
+        const rows = await client.query(query);
+        client.release();
+        console.log('Rows received');
+        // Store data in Redis cache with expiration time (e.g., 1 hour)
+        console.log('Stored data in Redis cache with expiration time 30 seconds');
+        await redisClient.set(cacheKey, JSON.stringify(rows.rows), 'EX', 30);
+        resolve(rows.rows);
+      }
+    });  
+  });
+}
 
-//     console.log("Fetching data from database");
-//     const client = await pool.connect();
-//     try {
-//       const result = await client.query(`
-//         SELECT a.name AS author_name, SUM(si.item_price * si.quantity) AS total_sales_revenue
-//         FROM authors a
-//         JOIN books b ON a.id = b.author_id
-//         JOIN sale_items si ON b.id = si.book_id
-//         GROUP BY a.name
-//         ORDER BY total_sales_revenue DESC
-//         LIMIT 10;
-//       `);
-//       const topAuthors = result.rows;
+redisClient.on('error', (err) => {
+  console.error('Redis client error:', err);
+  redisClient.quit();
+});
 
-//       // Cache the data in Redis
-//       await redisSetexAsync("topAuthors", 3600, JSON.stringify(topAuthors)); // Cache for 1 hour
-
-//       return topAuthors;
-//     } catch (err) {
-//       throw err;
-//     } finally {
-//       client.release();
-//     }
-//   } catch (err) {
-//     console.error("Error fetching top authors:", err);
-//     throw err;
-//   }
-// }
-
-module.exports = { getTopAuthors };
-
-
-
-
+module.exports = { getTopAuthors, getAuthorByName };

@@ -10,7 +10,6 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware for parsing JSON bodies
 app.use(express.json());
-app.use
 
 // routes
 app.use('/setup', setupRouter);
