@@ -1,8 +1,0 @@
-{
-    "rewrites": [
-      {
-        "source": "/authors/:path",
-        "destination": "http://13.52.77.220:3000/authors/:path"
-      }
-    ]
-  }
