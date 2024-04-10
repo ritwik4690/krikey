@@ -16,7 +16,7 @@ function AuthorList() {
     const fetchData = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:3000/authors/top-authors",
+          "http://13.52.77.220:3000/authors/top-authors",
           {
             params: {
               author_name: author_name,
