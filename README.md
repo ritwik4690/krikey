@@ -129,7 +129,26 @@ I saw the team uses AWS and wanted to deploy on AWS. But this is my first time w
 For Configuring EC2, after launching it used:
 ```
 ssh -i /path/to/your-key.pem ec2-user@your-public-ip
-
 ```
 
-After this, installed dependencies and started the server but unable to access it using public IP. So working on that right now.
+After this, installed dependencies and started the server but was unable to access it using public IP. So working on that right now.
+
+#### Update after deadline:
+* I was able to successfully deploy the backend API on AWS EC2 instance, the Redis Cache on AWS ElastiCache and the PostgreSQL database on AWS RDS.
+* The issue I had earlier was with the security groups. After correctly configuring the inbound rules, it is working now.
+
+Deployment steps continued:
+1. After connecting to the EC2 instance, used this command to update system packages and to install required packages:
+```
+sudo yum update
+sudo yum install nodejs npm
+```
+2. Then cloned the git repository using, `git clone <my_repo_name>`
+3. Installed package manager to keep the server running.
+```
+npm install pm2 -g //Install PM2 globally
+pm2 start index.js
+```
+4. Now the instance is running on: http://13.52.77.220:3000/
+    - Use `/setup` for setting the database and `/authors/top-authors?author_name=[author_name]` for querying authors.
+5. Finally I configured the ElastiCache and RDS instances and added the corresponding endpoints in my code.
