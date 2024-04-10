@@ -1,3 +1,4 @@
+// api/[proxy].js
 import { createProxyMiddleware } from 'http-proxy-middleware';
 
 export const config = {
@@ -6,10 +7,10 @@ export const config = {
   },
 };
 
-const proxy = createProxyMiddleware({
+const proxy = createProxyMiddleware(['/api'], {
   target: 'http://13.52.77.220:3000', // backend URL
   changeOrigin: true,
-  secure: false, // Disable SSL verification 
+  secure: false, // Disable SSL verification for HTTP requests (optional, but may be needed)
 });
 
 export default proxy;
